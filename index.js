@@ -1,7 +1,9 @@
 const express = require('express')
 const app = express()
 
-const entries = [
+app.use(express.json())
+
+let entries = [
     { 
       "id": "1",
       "name": "Arto Hellas", 
@@ -26,6 +28,59 @@ const entries = [
 
 app.get('/api/persons', (request, response) => {
   response.json(entries)
+})
+
+app.get('/info', (request, response) => {
+  response.send(`<p>Phonebook has info for ${entries.length} people</p>
+  <p>${new Date()}</p>`)
+})
+
+app.get('/api/persons/:id', (request, response) => {
+    const id = request.params.id
+    const entry = entries.find(entry => entry.id === id)
+    if (entry) {
+        response.json(entry)
+    } else {
+        response.status(404).end()
+    }
+})
+
+app.delete('/api/persons/:id', (request, response) => {
+    const id = request.params.id
+    entries = entries.filter(entry => entry.id !== id)
+    response.status(204).end()
+})
+
+const generateId = () => {
+    const maxId = entries.length > 0
+    ? Math.max(...entries.map(entry => Number(entry.id)))
+    : 0
+    return String(maxId + 1)
+}
+
+app.post('/api/persons', (request, response) => {
+
+    const body = request.body
+    
+    if (!body.name || !body.number) {
+        return response.status(400).json({
+            error: 'name or number missing'
+        })
+    }
+
+    if (entries.find(entry => entry.name === body.name)) {
+        return response.status(400).json({
+            error: 'name must be unique'
+        })}
+
+    const entry = {
+        id: generateId(),
+        name: body.name,
+        number: body.number
+    }
+
+    entries = entries.concat(entry)
+    response.json(entry)
 })
 
 const PORT = 3001
